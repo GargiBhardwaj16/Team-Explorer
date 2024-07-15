@@ -1,81 +1,43 @@
-import streamlit as st
-import tensorflow as tf
-import pandas as pd
-from PIL import Image
-import pickle
-import numpy as np
 from tensorflow.keras.preprocessing import image
-from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input
 from tensorflow.keras.layers import GlobalMaxPooling2D
+from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input
 from tensorflow.keras.models import Sequential
+import numpy as np
 from numpy.linalg import norm
-from sklearn.neighbors import NearestNeighbors
 import os
+from tqdm import tqdm
+import pickle
 
-# Load precomputed features and image files
-features_list = pickle.load(open("image_features_embedding.pkl", "rb"))
-img_files_list = pickle.load(open("img_files.pkl", "rb"))
-
-# Load the pre-trained ResNet50 model
 model = ResNet50(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
 model.trainable = False
+
 model = Sequential([model, GlobalMaxPooling2D()])
+#model.summary()
 
-st.title('Myntra StyleVista')
-
-def save_file(uploaded_file):
-    try:
-        with open(os.path.join("uploads", uploaded_file.name), 'wb') as f:
-            f.write(uploaded_file.getbuffer())
-            return 1
-    except:
-        return 0
-
-def extract_img_features(img_path, model):
-    img = image.load_img(img_path, target_size=(224, 224))
+def extract_features(img_path,model):
+    img = image.load_img(img_path,target_size=(224,224))
     img_array = image.img_to_array(img)
-    expand_img = np.expand_dims(img_array, axis=0)
+    expand_img = np.expand_dims(img_array,axis=0)
     preprocessed_img = preprocess_input(expand_img)
     result_to_resnet = model.predict(preprocessed_img)
     flatten_result = result_to_resnet.flatten()
+    # normalizing
     result_normlized = flatten_result / norm(flatten_result)
+
     return result_normlized
+#print(os.listdir('fashion_small/images'))
+img_files = []
 
-def recommendd(features, features_list):
-    neighbors = NearestNeighbors(n_neighbors=6, algorithm='brute', metric='euclidean')
-    neighbors.fit(features_list)
-    distence, indices = neighbors.kneighbors([features])
-    return indices
+for fashion_images in os.listdir('fashion_small/images'):
+    images_path = os.path.join('fashion_small/images', fashion_images)
+    img_files.append(images_path)
 
-uploaded_file = st.file_uploader("Choose your image")
-if uploaded_file is not None:
-    if save_file(uploaded_file):
-        show_images = Image.open(uploaded_file)
-        size = (400, 400)
-        resized_im = show_images.resize(size)
-        st.image(resized_im)
-        features = extract_img_features(os.path.join("uploads", uploaded_file.name), model)
-        img_indicess = recommendd(features, features_list)
-        col1, col2, col3, col4, col5 = st.columns(5)
-        
-        with col1:
-            st.header("I")
-            st.image(img_files_list[img_indicess[0][0]])
+# extracting image features
+image_features = []
 
-        with col2:
-            st.header("II")
-            st.image(img_files_list[img_indicess[0][1]])
+for files in tqdm(img_files):
+    features_list = extract_features(files, model)
+    image_features.append(features_list)
 
-        with col3:
-            st.header("III")
-            st.image(img_files_list[img_indicess[0][2]])
-
-        with col4:
-            st.header("IV")
-            st.image(img_files_list[img_indicess[0][3]])
-
-        with col5:
-            st.header("V")
-            st.image(img_files_list[img_indicess[0][4]])
-    else:
-        st.header("Some error occurred")
+pickle.dump(image_features, open("image_features_embedding.pkl", "wb"))
+pickle.dump(img_files, open("img_files.pkl", "wb"))
