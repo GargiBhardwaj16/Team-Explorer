@@ -11,8 +11,6 @@ from tensorflow.keras.models import Sequential
 from numpy.linalg import norm
 from sklearn.neighbors import NearestNeighbors
 import os
-logo_path = "myntra_logo.jpg"
-st.image(logo_path, width=100)
 
 # Load precomputed features and image files
 features_list = pickle.load(open("image_features_embedding.pkl", "rb"))
