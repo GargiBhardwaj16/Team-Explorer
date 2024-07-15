@@ -39,10 +39,13 @@ In the fast-paced world of fashion, keeping up with the latest trends and cateri
 
 ## 📸 Screenshots
 
-![Home Page](https://via.placeholder.com/800x400)  
-*Caption: Discover the latest trends at a glance.*
+![Home Page](Demo1.jpg)  
 
-![Recommendation Page](https://via.placeholder.com/800x400)  
+*Caption: Discover the latest trends at a glance.*
+![Home Page](Demo2.jpg)
+
+![Recommendation Page](Demo3.jpg) 
+
 *Caption: Personalized recommendations just for you.*
 
 ## 🤝 Contributing
