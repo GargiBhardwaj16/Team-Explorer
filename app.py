@@ -28,8 +28,8 @@ def extract_features(img_path,model):
 #print(os.listdir('fashion_small/images'))
 img_files = []
 
-for fashion_images in os.listdir('fashion_small/images'):
-    images_path = os.path.join('fashion_small/images', fashion_images)
+for fashion_images in os.listdir('fashion_small'):
+    images_path = os.path.join('fashion_small', fashion_images)
     img_files.append(images_path)
 
 # extracting image features
