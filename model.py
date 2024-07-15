@@ -1,43 +1,42 @@
-from tensorflow.keras.preprocessing import image
-from tensorflow.keras.layers import GlobalMaxPooling2D
-from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input
-from tensorflow.keras.models import Sequential
-import numpy as np
-from numpy.linalg import norm
-import os
-from tqdm import tqdm
 import pickle
+import numpy as np
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input
+from tensorflow.keras.layers import GlobalMaxPooling2D
+from tensorflow.keras.models import Sequential
+from numpy.linalg import norm
+from sklearn.neighbors import NearestNeighbors
+import cv2
+
+features_list = pickle.load(open("image_features_embedding.pkl", "rb"))
+img_files_list = pickle.load(open("img_files.pkl", "rb"))
+
+print(np.array(features_list).shape)
 
 model = ResNet50(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
 model.trainable = False
 
 model = Sequential([model, GlobalMaxPooling2D()])
-#model.summary()
 
-def extract_features(img_path,model):
-    img = image.load_img(img_path,target_size=(224,224))
-    img_array = image.img_to_array(img)
-    expand_img = np.expand_dims(img_array,axis=0)
-    preprocessed_img = preprocess_input(expand_img)
-    result_to_resnet = model.predict(preprocessed_img)
-    flatten_result = result_to_resnet.flatten()
-    # normalizing
-    result_normlized = flatten_result / norm(flatten_result)
+img = image.load_img('sample/shoes.jpg',target_size=(224,224))
+img_array = image.img_to_array(img)
+expand_img = np.expand_dims(img_array,axis=0)
+preprocessed_img = preprocess_input(expand_img)
+result_to_resnet = model.predict(preprocessed_img)
+flatten_result = result_to_resnet.flatten()
+# normalizing
+result_normlized = flatten_result / norm(flatten_result)
 
-    return result_normlized
-#print(os.listdir('fashion_small/images'))
-img_files = []
+neighbors = NearestNeighbors(n_neighbors = 6, algorithm='brute', metric='euclidean')
+neighbors.fit(features_list)
 
-for fashion_images in os.listdir('fashion_small'):
-    images_path = os.path.join('fashion_small', fashion_images)
-    img_files.append(images_path)
+distence, indices = neighbors.kneighbors([result_normlized])
 
-# extracting image features
-image_features = []
+print(indices)
 
-for files in tqdm(img_files):
-    features_list = extract_features(files, model)
-    image_features.append(features_list)
-
-pickle.dump(image_features, open("image_features_embedding.pkl", "wb"))
-pickle.dump(img_files, open("img_files.pkl", "wb"))
+for file in indices[0][1:6]:
+    print(img_files_list[file])
+    tmp_img = cv2.imread(img_files_list[file])
+    tmp_img = cv2.resize(tmp_img,(200,200))
+    cv2.imshow("output", tmp_img)
+    cv2.waitKey(0)
