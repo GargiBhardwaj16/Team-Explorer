@@ -1,5 +1,5 @@
 import streamlit as st
-import tensorflow
+import tensorflow as tf
 import pandas as pd
 from PIL import Image
 import pickle
@@ -12,24 +12,24 @@ from numpy.linalg import norm
 from sklearn.neighbors import NearestNeighbors
 import os
 
-features_list = pickle.load(open("imagefeatures.pkl", "rb"))
-img_files_list = pickle.load(open("imgfile.pkl", "rb"))
+# Load precomputed features and image files
+features_list = pickle.load(open("image_features_embedding.pkl", "rb"))
+img_files_list = pickle.load(open("img_files.pkl", "rb"))
 
+# Load the pre-trained ResNet50 model
 model = ResNet50(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
 model.trainable = False
 model = Sequential([model, GlobalMaxPooling2D()])
 
-st.title('Clothing recommender system')
-
+st.title('Clothing Recommender System')
 
 def save_file(uploaded_file):
     try:
-        with open(os.path.join("uploader", uploaded_file.name), 'wb') as f:
+        with open(os.path.join("uploads", uploaded_file.name), 'wb') as f:
             f.write(uploaded_file.getbuffer())
             return 1
     except:
         return 0
-
 
 def extract_img_features(img_path, model):
     img = image.load_img(img_path, target_size=(224, 224))
@@ -38,34 +38,26 @@ def extract_img_features(img_path, model):
     preprocessed_img = preprocess_input(expand_img)
     result_to_resnet = model.predict(preprocessed_img)
     flatten_result = result_to_resnet.flatten()
-    # normalizing
     result_normlized = flatten_result / norm(flatten_result)
-
     return result_normlized
-
 
 def recommendd(features, features_list):
     neighbors = NearestNeighbors(n_neighbors=6, algorithm='brute', metric='euclidean')
     neighbors.fit(features_list)
-
     distence, indices = neighbors.kneighbors([features])
-
     return indices
 
 uploaded_file = st.file_uploader("Choose your image")
 if uploaded_file is not None:
     if save_file(uploaded_file):
-        # display image
         show_images = Image.open(uploaded_file)
         size = (400, 400)
         resized_im = show_images.resize(size)
         st.image(resized_im)
-        # extract features of uploaded image
-        features = extract_img_features(os.path.join("uploader", uploaded_file.name), model)
-        #st.text(features)
+        features = extract_img_features(os.path.join("uploads", uploaded_file.name), model)
         img_indicess = recommendd(features, features_list)
-        col1,col2,col3,col4,col5 = st.columns(5)
-
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
         with col1:
             st.header("I")
             st.image(img_files_list[img_indicess[0][0]])
@@ -86,4 +78,4 @@ if uploaded_file is not None:
             st.header("V")
             st.image(img_files_list[img_indicess[0][4]])
     else:
-        st.header("Some error occur")
+        st.header("Some error occurred")
